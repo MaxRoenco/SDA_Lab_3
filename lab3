@@ -1,0 +1,358 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <limits.h>
+
+typedef struct Product {
+    int prod;
+    int* arr;
+    int line;
+    int size;
+} Product;
+
+void swap(int* a, int* b){
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void find_size(Product* products, int number_subarrays, int m){
+    for(int i = 0; i < number_subarrays; i++){
+        int k = 0;
+        for(int j = 0; j < m; j++){
+            if(products[i].arr[j] != 0) k++;
+        }
+        products[i].size = k;
+    }
+}
+
+void print_struct(Product* products, int number_subarrays){
+    for(int i = 0; i < number_subarrays; i++){
+        printf("Product: %d ", products[i].prod);
+        printf("Row in Matrix: %d ", products[i].line + 1);
+        printf("SubArray %d : ", i + 1);
+        printf("\t");
+        printf("[ ");
+        for(int j = 0; j < products[i].size; j++){
+            printf("%d ", products[i].arr[j]);
+        }
+        printf("]");
+        printf("\n");
+    }
+    printf("Number of subarrays: %d \n", number_subarrays);
+}
+
+void print_arr(int* arr, int n){
+    printf("[ ");
+    for(int i = 0; i < n; i++){
+        printf("%d ", arr[i]);
+    }
+    printf("]");
+}
+
+void print_mat(int n, int m, int** mat){
+    for (int i = 0; i < n; i++) {
+        printf("[");
+        for(int j = 0; j < m; j++){
+            printf("%d ", mat[i][j]);
+        }
+        printf("]\n");
+    }
+    printf("\n");
+}
+
+void counting_sort(int *arr, int n){
+    int max_value = arr[0];
+    for (int i = 1; i < n; i++){
+        if (arr[i] > max_value){
+            max_value = arr[i];
+        }
+    }
+    int counting[max_value + 1];
+    for (int i = 0; i <= max_value; i++){
+        counting[i] = 0;
+    }
+    for (int i = 0; i < n; i++){
+        counting[arr[i]]++;
+    }
+    for (int i = max_value - 1; i >= 0; i--){
+        counting[i] += counting[i + 1];
+    }
+    int temp[n];
+    for (int i = n - 1; i >= 0; i--){
+        temp[counting[arr[i]] - 1] = arr[i];
+        counting[arr[i]]--;
+    }
+    for (int i = 0; i < n; i++){
+        arr[i] = temp[i];
+    }
+}
+
+
+void heapify(int arr[], int N, int i){
+    int largest = i;
+    int left = 2 * i + 1;
+    int right = 2 * i + 2;
+    if (left < N && arr[left] < arr[largest]) 
+        largest = left;
+    if (right < N && arr[right] < arr[largest]) 
+        largest = right;
+    if (largest != i) {
+        swap(&arr[i], &arr[largest]);
+        heapify(arr, N, largest);
+    }
+}
+
+void heap_sort(int* arr, int N){
+    for (int i = N / 2 - 1; i >= 0; i--)
+        heapify(arr, N, i);
+    for (int i = N - 1; i > 0; i--) { 
+        swap(&arr[0], &arr[i]);
+        heapify(arr, i, 0); 
+    }
+}
+
+void heap_sort_line(int** mat, int line, int m){
+    int temp[m];
+    for(int i = 0; i < m; i++){
+        temp[i] = mat[line][i];
+    }
+    heap_sort(temp, m);
+    for(int i = 0; i < m; i++){
+        mat[line][i] = temp[i];
+    }
+}
+
+void counting_sort_line(int** mat, int line, int m){
+    int temp[m];
+    for(int i = 0; i < m; i++){
+        temp[i] = mat[line][i];
+    }
+    counting_sort(temp, m);
+    for(int i = 0; i < m; i++){
+        mat[line][i] = temp[i];
+    }
+}
+
+int find_elements(Product* products, int number_subarrays){
+    int elements_subarray = 0;
+    for(int i = 0; i < number_subarrays; i++){
+        elements_subarray += products[i].size;
+    }
+    return elements_subarray;
+}
+
+int find_shortest(Product* products, int number_subarrays){
+    int count = number_subarrays - 1;
+    int shortest = INT_MAX;
+    for(int i = 0; i < number_subarrays; i++){
+        if(products[i].size < shortest){
+            shortest = products[i].size;
+        }
+    }
+    for(int i = number_subarrays - 1; i >= 0; i--){
+        if(shortest == products[i].size){
+            break;
+        } else{
+            count--;
+        }
+    }
+    return count;
+}
+
+int find_longest(Product* products, int number_subarrays){
+    int count = number_subarrays - 1;
+    int longest = 0;
+    for(int i = 0; i < number_subarrays; i++){
+        if(products[i].size > longest){
+            longest = products[i].size;
+        }
+    }
+    for(int i = number_subarrays - 1; i >= 0; i--){
+        if(longest == products[i].size){
+            break;
+        } else{
+            count--;
+        }
+    }
+    return count;
+}
+
+void apply_sort(Product* products, int number_subarrays, int** mat, int n, int m){
+    int elements_subarray = find_elements(products, number_subarrays);
+    int count_shortest = find_shortest(products, number_subarrays);
+    int count_longest = find_longest(products, number_subarrays);
+    
+    printf("Total elements: %d \n", elements_subarray);
+    
+    if(elements_subarray % 2 == 0){
+        counting_sort_line(mat, products[count_shortest].line, m);
+    }
+    else{
+        heap_sort_line(mat, products[count_longest].line, m);
+    }
+}
+
+void find_product(Product* products, int n, int m){
+    for(int i = 0; i < n; i++){
+        if(products[i].arr != NULL){
+            products[i].prod = 1;
+            for(int j = 0; j < m; j++){
+                if(products[i].arr[j] > 0 && products[i].arr[j] < 11){
+                    products[i].prod *= products[i].arr[j];
+                }
+            }
+        }
+    }
+}
+
+int find_subarrays(Product* products, int** mat, int n, int m){
+    int t = 0;
+    for(int i = 0; i < n; i++){
+        int k = 0;
+        for(int j = 0; j < m; j++){
+            if(mat[i][j] % 2 == 1){
+                products[t].arr[k++] = mat[i][j];
+                if (j + 1 < m && mat[i][j + 1] % 2 == 0) {
+                    if (k >= 2) {
+                        products[t].line = i; 
+                        t++;
+                    }
+                    k = 0; 
+                }
+            }
+            else {
+                if (k >= 2) {
+                    products[t].line = i; 
+                    t++;
+                }
+                k = 0;
+            }
+        }
+        if (k >= 2) {
+            products[t].line = i; 
+            t++;
+        }
+    }
+    return t;
+}
+
+
+void printMenu() {
+    printf("+--------------------------------------+\n");
+    printf("|               Menu                   |\n");
+    printf("+--------------------------------------+\n");
+    printf("| 0 - Exit                             |\n");
+    printf("| 1 - Print matrix                     |\n");
+    printf("| 2 - Odd Product                      |\n");
+    printf("+--------------------------------------+\n");
+}
+
+int main() {
+    srand(time(NULL));
+    int k;
+    int n;
+    int m;
+    int number_subarrays;
+    int **mat = NULL;
+    Product *products = NULL;
+    while(1) {
+        printf("+--------------------------------------+\n");
+        printf("|               Menu                   |\n");
+        printf("+--------------------------------------+\n");
+        printf("| 0 - Exit                             |\n");
+        printf("| 1 - Input numbers in array (keyboard)|\n");
+        printf("| 2 - Input numbers in array randomly  |\n");
+        printf("+--------------------------------------+\n");
+        scanf("%d", &k);
+        switch (k) {
+            case 0:
+                exit(EXIT_SUCCESS);
+            case 1:
+                printf("Input number of rows:");
+                scanf("%d", &n);
+                printf("Input number of columns:");
+                scanf("%d", &m);
+                mat = (int **)malloc(sizeof(int*) * n);
+                if (mat == NULL) {
+                    printf("Memory allocation failed. Exiting.\n");
+                    exit(EXIT_FAILURE);
+                }
+                for(int i = 0; i < n; i++) {
+                    mat[i] = (int *)malloc(sizeof(int) * m);
+                    if (mat[i] == NULL) {
+                        printf("Memory allocation failed. Exiting.\n");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                for(int i = 0; i < n; i++) {
+                    for(int j = 0; j < m; j++) {
+                        scanf("%d", &mat[i][j]);
+                    }
+                }
+                print_mat(n, m, mat);
+                break;
+            case 2:
+                printf("Input number of rows:");
+                scanf("%d", &n);
+                printf("Input number of columns:");
+                scanf("%d", &m);
+                mat = (int **)malloc(sizeof(int*) * n);
+                if (mat == NULL) {
+                    printf("Memory allocation failed. Exiting.\n");
+                    exit(EXIT_FAILURE);
+                }
+                for(int i = 0; i < n; i++) {
+                    mat[i] = (int *)malloc(sizeof(int) * m);
+                    if (mat[i] == NULL) {
+                        printf("Memory allocation failed. Exiting.\n");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                for(int i = 0; i < n; i++) {
+                    for(int j = 0; j < m; j++) {
+                        mat[i][j] = rand() % 10 + 1;
+                    }
+                }
+                print_mat(n, m, mat);
+                printf("\n");
+                break;
+        }
+
+        printMenu();
+
+        scanf("%d", &k);
+        switch (k) {
+            case 0:
+                return 1;
+                break;
+            case 1:
+                print_mat(n, m, mat);
+                break;
+            case 2:
+                products = (Product*)malloc(sizeof(Product) * (n * m)); 
+                for(int i = 0; i < n * m; i++){
+                    products[i].arr = (int*)malloc(sizeof(int) * m);
+                }
+                number_subarrays = find_subarrays(products, mat, n, m);
+                find_product(products, number_subarrays, m); 
+                find_size(products, number_subarrays, m);
+                print_struct(products, number_subarrays);
+                apply_sort(products, number_subarrays, mat, n, m);
+                print_mat(n, m, mat);
+                break;
+        }
+        for(int i = 0; i < n; i++) {
+            free(mat[i]);
+        }
+        free(mat);
+        for(int i = 0; i < n * m; i++){ 
+            free(products[i].arr);
+        }
+        free(products); 
+    }
+    return 0;
+}
+
+
+
